@@ -47,7 +47,7 @@ func fallback() ([]found, error) {
 	names, _ := filepath.Glob("/dev/cu.usbmodem*")
 	var res []found
 	for _, n := range names {
-		res = append(res, found{n, VID, PID})
+		res = append(res, found{n, VID, PIDs[0]})
 	}
 	return res, nil
 }

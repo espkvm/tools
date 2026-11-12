@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // Package clip reads and sets the text clipboard of the desktop session the
-// agent runs in. A system service has no desktop, so there it fails cleanly.
+// program runs in. A system service has no desktop, so there it fails cleanly.
 package clip
 
 import (
@@ -15,7 +15,7 @@ import (
 const MaxText = 512 * 1024
 
 // ErrNoDesktop is returned when there is no clipboard to reach.
-var ErrNoDesktop = errors.New("no desktop session: run the agent in the user's session for the clipboard")
+var ErrNoDesktop = errors.New("no desktop session: run ESP-KVM Tools in the user's session for the clipboard")
 
 // ErrTooLong is returned for text over MaxText.
 var ErrTooLong = errors.New("text is over 512 KB")

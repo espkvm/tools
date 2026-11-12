@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 ESP-KVM contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// espkvm-agent runs on the machine ESP-KVM is plugged into and answers the
+// espkvm-tools runs on the machine ESP-KVM is plugged into and answers the
 // device over the USB serial port: what the machine is, its clipboard, and,
 // when allowed here, reading the clipboard and a clean shutdown.
 package main
@@ -18,26 +18,26 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/espkvm/agent/internal/clip"
-	"github.com/espkvm/agent/internal/port"
-	"github.com/espkvm/agent/internal/power"
-	"github.com/espkvm/agent/internal/proto"
-	"github.com/espkvm/agent/internal/service"
-	"github.com/espkvm/agent/internal/session"
-	"github.com/espkvm/agent/internal/sysinfo"
+	"github.com/espkvm/tools/internal/clip"
+	"github.com/espkvm/tools/internal/port"
+	"github.com/espkvm/tools/internal/power"
+	"github.com/espkvm/tools/internal/proto"
+	"github.com/espkvm/tools/internal/service"
+	"github.com/espkvm/tools/internal/session"
+	"github.com/espkvm/tools/internal/sysinfo"
 )
 
 // version is set at build time: -ldflags "-X main.version=1.2.3".
 var version = "dev"
 
-const usage = `espkvm-agent %s - the ESP-KVM agent for the machine it is plugged into
+const usage = `espkvm-tools %s - the ESP-KVM Tools for the machine it is plugged into
 
-  espkvm-agent run [--port NAME] [ALLOW...]      answer the device (foreground)
-  espkvm-agent install [--desktop] [ALLOW...]    start it at every boot or login
-  espkvm-agent uninstall                         take it out again
-  espkvm-agent find                              which port is ESP-KVM's
-  espkvm-agent info                              what it would tell the device
-  espkvm-agent version
+  espkvm-tools run [--port NAME] [ALLOW...]      answer the device (foreground)
+  espkvm-tools install [--desktop] [ALLOW...]    start it at every boot or login
+  espkvm-tools uninstall                         take it out again
+  espkvm-tools find                              which port is ESP-KVM's
+  espkvm-tools info                              what it would tell the device
+  espkvm-tools version
 
 By default the device may read what the machine is and put text on the
 clipboard. ALLOW adds more:
@@ -79,7 +79,7 @@ func main() {
 		os.Exit(2)
 	}
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "espkvm-agent:", err)
+		fmt.Fprintln(os.Stderr, "espkvm-tools:", err)
 		os.Exit(1)
 	}
 }
@@ -134,7 +134,7 @@ func runCmd(args []string) error {
 	signal.Notify(sig, os.Interrupt)
 	go func() { <-sig; close(stop); os.Exit(0) }()
 
-	log.Printf("espkvm-agent %s on %s, clipboard read %s, power %s", version, runtime.GOOS, onOff(a.clipRead), onOff(a.power))
+	log.Printf("espkvm-tools %s on %s, clipboard read %s, power %s", version, runtime.GOOS, onOff(a.clipRead), onOff(a.power))
 	announced := false
 	for {
 		p := *name
@@ -174,7 +174,7 @@ func onOff(b bool) string {
 }
 
 func newServer(a allow) *proto.Server {
-	s := &proto.Server{AgentVersion: version, OS: runtime.GOOS}
+	s := &proto.Server{ToolsVersion: version, OS: runtime.GOOS}
 	s.Handle("ping", func(json.RawMessage) (any, error) { return "pong", nil })
 	s.Handle("info", func(json.RawMessage) (any, error) { return sysinfo.Get(), nil })
 	s.Handle("clipboard.get", func(json.RawMessage) (any, error) {

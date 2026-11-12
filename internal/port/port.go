@@ -13,14 +13,14 @@ import (
 	"go.bug.st/serial"
 )
 
-// The USB IDs ESP-KVM uses when its serial port is on.
-const (
-	VID = "303A"
-	PID = "4013"
-)
+// The USB IDs ESP-KVM uses when its serial port is on: 4013, or 4033 with the
+// USB speaker on too.
+const VID = "303A"
+
+var PIDs = []string{"4013", "4033"}
 
 // ErrNotFound is returned when no ESP-KVM port is attached.
-var ErrNotFound = errors.New("no ESP-KVM serial port found: in ESP-KVM's settings set \"Serial port over USB\" to the agent")
+var ErrNotFound = errors.New("no ESP-KVM serial port found: in ESP-KVM's settings set \"Serial port over USB\" to \"ESP-KVM Tools\"")
 
 // Find returns the name of ESP-KVM's port, like /dev/ttyACM0 or COM5.
 func Find() (string, error) {
@@ -29,8 +29,13 @@ func Find() (string, error) {
 		return "", err
 	}
 	for _, p := range ports {
-		if strings.EqualFold(p.vid, VID) && strings.EqualFold(p.pid, PID) {
-			return p.name, nil
+		if !strings.EqualFold(p.vid, VID) {
+			continue
+		}
+		for _, pid := range PIDs {
+			if strings.EqualFold(p.pid, pid) {
+				return p.name, nil
+			}
 		}
 	}
 	return "", ErrNotFound

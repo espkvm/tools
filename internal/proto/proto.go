@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: 2026 ESP-KVM contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package proto is the line protocol between ESP-KVM and the agent: one JSON
-// object per line, both ways. The device asks, the agent answers. The only
-// thing the agent sends on its own is the hello, when the port opens.
+// Package proto is the line protocol between ESP-KVM and ESP-KVM Tools: one JSON
+// object per line, both ways. The device asks, the program answers. The only
+// thing it sends on its own is the hello, when the port opens.
 // PROTOCOL.md has the whole of it.
 package proto
 
@@ -44,7 +44,7 @@ type Response struct {
 type Hello struct {
 	Ev    string   `json:"ev"`
 	Proto int      `json:"proto"`
-	Agent string   `json:"agent"`
+	Tools string   `json:"tools"`
 	OS    string   `json:"os"`
 	Ops   []string `json:"ops"`
 }
@@ -59,7 +59,7 @@ func (e *Error) Error() string { return e.Msg }
 
 // Errors with codes.
 var (
-	ErrUnknownOp  = &Error{"unknown_op", "this agent does not know that op"}
+	ErrUnknownOp  = &Error{"unknown_op", "this version does not know that op"}
 	ErrNotAllowed = &Error{"not_allowed", "switched off on this machine"}
 	ErrBadParams  = &Error{"bad_params", "bad params"}
 	ErrLocked     = &Error{"locked", "the screen is locked"}
@@ -70,7 +70,7 @@ type Handler func(params json.RawMessage) (any, error)
 
 // Server answers requests on one port.
 type Server struct {
-	AgentVersion string
+	ToolsVersion string
 	OS           string
 	ops          map[string]Handler
 	names        []string
@@ -86,11 +86,11 @@ func (s *Server) Handle(op string, h Handler) {
 }
 
 func (s *Server) hello() Hello {
-	return Hello{Ev: "hello", Proto: Version, Agent: s.AgentVersion, OS: s.OS, Ops: s.names}
+	return Hello{Ev: "hello", Proto: Version, Tools: s.ToolsVersion, OS: s.OS, Ops: s.names}
 }
 
 // Serve reads requests from rw and answers them until rw fails. A line that is
-// not a JSON object is skipped: whatever was on the port before the agent
+// not a JSON object is skipped: whatever was on the port before the program
 // opened it must not stop it.
 func (s *Server) Serve(rw io.ReadWriter) error {
 	var mu sync.Mutex
@@ -149,7 +149,7 @@ func (s *Server) run(req Request) any {
 func safeCall(h Handler, p json.RawMessage) (data any, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("agent error: %v", r)
+			err = fmt.Errorf("internal error: %v", r)
 		}
 	}()
 	return h(p)

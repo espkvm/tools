@@ -20,9 +20,9 @@ type pipePort struct {
 
 func start(t *testing.T, s *Server) (send func(string), next func() map[string]any) {
 	t.Helper()
-	devR, agentW := io.Pipe()
-	agentR, devW := io.Pipe()
-	go func() { _ = s.Serve(pipePort{agentR, agentW}) }()
+	devR, toolsW := io.Pipe()
+	toolsR, devW := io.Pipe()
+	go func() { _ = s.Serve(pipePort{toolsR, toolsW}) }()
 	t.Cleanup(func() { devW.Close(); devR.Close() })
 	lines := bufio.NewScanner(devR)
 	next = func() map[string]any {
@@ -32,11 +32,11 @@ func start(t *testing.T, s *Server) (send func(string), next func() map[string]a
 			}
 			var m map[string]any
 			if err := json.Unmarshal(lines.Bytes(), &m); err != nil {
-				t.Fatalf("agent sent %q: %v", lines.Text(), err)
+				t.Fatalf("tools sent %q: %v", lines.Text(), err)
 			}
 			return m
 		}
-		t.Fatal("agent closed")
+		t.Fatal("tools closed")
 		return nil
 	}
 	send = func(s string) {
@@ -48,7 +48,7 @@ func start(t *testing.T, s *Server) (send func(string), next func() map[string]a
 }
 
 func TestHelloRequestsAndErrors(t *testing.T) {
-	s := &Server{AgentVersion: "test", OS: "linux"}
+	s := &Server{ToolsVersion: "test", OS: "linux"}
 	s.Handle("echo", func(p json.RawMessage) (any, error) {
 		var v struct{ Text string }
 		if json.Unmarshal(p, &v) != nil {

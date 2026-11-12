@@ -4,7 +4,7 @@
 package power
 
 // System Events asks the apps to quit, like the Apple menu does, and works
-// without root. A root agent could use shutdown(8), but the apps would not get
+// without root. Running as root, it could use shutdown(8), but the apps would not get
 // their chance to save.
 func command(action string) (string, []string) {
 	verb := "shut down"

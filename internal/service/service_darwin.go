@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-const label = "io.espkvm.agent"
+const label = "io.espkvm.tools"
 
 // A LaunchAgent, not a daemon: it runs in the user's session, where the
 // clipboard is, and opening the port needs no root on macOS.
@@ -34,7 +34,7 @@ func paths() (exe, pl string, err error) {
 	if err != nil {
 		return "", "", err
 	}
-	return filepath.Join(home, "Library", "Application Support", "ESP-KVM", "espkvm-agent"),
+	return filepath.Join(home, "Library", "Application Support", "ESP-KVM", "espkvm-tools"),
 		filepath.Join(home, "Library", "LaunchAgents", label+".plist"), nil
 }
 
@@ -43,6 +43,7 @@ func Install(o Options) error {
 	if err != nil {
 		return err
 	}
+	removeOld()
 	if err := copyExe(exe); err != nil {
 		return err
 	}
@@ -63,6 +64,18 @@ func Install(o Options) error {
 	}
 	fmt.Println("Installed and started. It starts again at every login.")
 	return nil
+}
+
+// Before the rename the program was espkvm-agent, label io.espkvm.agent.
+func removeOld() {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return
+	}
+	const old = "io.espkvm.agent"
+	_ = exec.Command("launchctl", "bootout", fmt.Sprintf("gui/%d/%s", os.Getuid(), old)).Run()
+	_ = os.Remove(filepath.Join(home, "Library", "LaunchAgents", old+".plist"))
+	_ = os.Remove(filepath.Join(home, "Library", "Application Support", "ESP-KVM", "espkvm-agent"))
 }
 
 func Uninstall() error {

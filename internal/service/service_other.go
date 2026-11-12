@@ -8,6 +8,6 @@ package service
 import "errors"
 
 func Install(Options) error {
-	return errors.New("install is not supported here: start \"espkvm-agent run\" yourself")
+	return errors.New("install is not supported here: start \"espkvm-tools run\" yourself")
 }
 func Uninstall() error { return errors.New("not supported here") }

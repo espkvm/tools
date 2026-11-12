@@ -32,7 +32,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          (cd dist && sha256sum espkvm-agent-* > sha256sums.txt)
+          (cd dist && sha256sum espkvm-tools-* > sha256sums.txt)
           gh release create "$GITHUB_REF_NAME" dist/* \
-            --title "espkvm-agent ${GITHUB_REF_NAME#v}" \
-            --notes "Install: https://espkvm.io/agent/"
+            --title "espkvm-tools ${GITHUB_REF_NAME#v}" \
+            --notes "Install: https://espkvm.io/espkvm-tools/"

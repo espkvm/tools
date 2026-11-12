@@ -1,4 +1,4 @@
-module github.com/espkvm/agent
+module github.com/espkvm/tools
 
 go 1.26.0
 

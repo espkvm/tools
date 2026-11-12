@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 ESP-KVM contributors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package service installs the agent so it starts by itself, the way each OS
+// Package service installs ESP-KVM Tools so it starts by itself, the way each OS
 // does that, and takes it out again.
 package service
 
@@ -14,7 +14,7 @@ import (
 // Options for install.
 type Options struct {
 	// Desktop: run in the user's session, with the clipboard. Linux only; on
-	// Windows and macOS the agent always runs in the user's session.
+	// Windows and macOS it always runs in the user's session.
 	Desktop bool
 	// Power: the device may shut the machine down. A Linux system service
 	// then needs the OS to let its user do that.
@@ -23,8 +23,8 @@ type Options struct {
 	Args []string
 }
 
-// Name is how the agent shows up in service lists.
-const Name = "espkvm-agent"
+// Name is how it shows up in service lists.
+const Name = "espkvm-tools"
 
 // copyExe puts this executable at dst, unless it already runs from there.
 func copyExe(dst string) error {

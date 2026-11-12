@@ -13,45 +13,48 @@ import (
 )
 
 const (
-	exePath      = "/usr/local/bin/espkvm-agent"
-	unitPath     = "/etc/systemd/system/espkvm-agent.service"
-	userUnit     = "/etc/systemd/user/espkvm-agent.service"
-	udevPath     = "/etc/udev/rules.d/70-espkvm-agent.rules"
-	sysusersPath = "/etc/sysusers.d/espkvm-agent.conf"
+	exePath      = "/usr/local/bin/espkvm-tools"
+	unitPath     = "/etc/systemd/system/espkvm-tools.service"
+	userUnit     = "/etc/systemd/user/espkvm-tools.service"
+	udevPath     = "/etc/udev/rules.d/70-espkvm-tools.rules"
+	sysusersPath = "/etc/sysusers.d/espkvm-tools.conf"
 	// polkit reads one or the other, depending on its version.
-	polkitRules = "/etc/polkit-1/rules.d/50-espkvm-agent.rules"
-	polkitPkla  = "/etc/polkit-1/localauthority/50-local.d/50-espkvm-agent.pkla"
+	polkitRules = "/etc/polkit-1/rules.d/50-espkvm-tools.rules"
+	polkitPkla  = "/etc/polkit-1/localauthority/50-local.d/50-espkvm-tools.pkla"
 )
 
 // The system service runs as its own user, not root.
-const sysUser = "espkvm-agent"
+const sysUser = "espkvm-tools"
 
-const sysusers = `# ESP-KVM agent (installed by espkvm-agent)
-u espkvm-agent - "ESP-KVM agent"
+const sysusers = `# ESP-KVM Tools (installed by espkvm-tools)
+u espkvm-tools - "ESP-KVM Tools"
 `
 
 // ModemManager keeps its hands off the port. The system service gets it through
 // its group. In desktop mode the user at the screen may open it (uaccess).
-const udevSystem = `# ESP-KVM agent port (installed by espkvm-agent)
-SUBSYSTEM=="tty", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="4013", ENV{ID_MM_DEVICE_IGNORE}="1", GROUP="espkvm-agent", MODE="0660", SYMLINK+="espkvm-agent"
+// 4033 is the same port with the USB speaker on too.
+const udevSystem = `# ESP-KVM Tools port (installed by espkvm-tools)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="4013", ENV{ID_MM_DEVICE_IGNORE}="1", GROUP="espkvm-tools", MODE="0660", SYMLINK+="espkvm-tools"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="4033", ENV{ID_MM_DEVICE_IGNORE}="1", GROUP="espkvm-tools", MODE="0660", SYMLINK+="espkvm-tools"
 `
 
-const udevDesktop = `# ESP-KVM agent port (installed by espkvm-agent)
-SUBSYSTEM=="tty", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="4013", ENV{ID_MM_DEVICE_IGNORE}="1", TAG+="uaccess", SYMLINK+="espkvm-agent"
+const udevDesktop = `# ESP-KVM Tools port (installed by espkvm-tools)
+SUBSYSTEM=="tty", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="4013", ENV{ID_MM_DEVICE_IGNORE}="1", TAG+="uaccess", SYMLINK+="espkvm-tools"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="303a", ATTRS{idProduct}=="4033", ENV{ID_MM_DEVICE_IGNORE}="1", TAG+="uaccess", SYMLINK+="espkvm-tools"
 `
 
 // It reads the port, /etc/os-release, /proc and the interfaces, and may run
 // systemctl. Everything else is shut.
 const systemUnit = `[Unit]
-Description=ESP-KVM agent
+Description=ESP-KVM Tools
 After=network.target
 
 [Service]
 ExecStart=%s run%s
 Restart=always
 RestartSec=3
-User=espkvm-agent
-Group=espkvm-agent
+User=espkvm-tools
+Group=espkvm-tools
 NoNewPrivileges=yes
 CapabilityBoundingSet=
 ProtectSystem=strict
@@ -79,7 +82,7 @@ WantedBy=multi-user.target
 
 // In the graphical session, so WAYLAND_DISPLAY or DISPLAY is there.
 const desktopUnit = `[Unit]
-Description=ESP-KVM agent
+Description=ESP-KVM Tools
 PartOf=graphical-session.target
 After=graphical-session.target
 
@@ -100,15 +103,15 @@ var powerActions = []string{
 	"org.freedesktop.login1.reboot-multiple-sessions",
 }
 
-const polkitJS = `// ESP-KVM agent (installed by espkvm-agent --allow-power)
+const polkitJS = `// ESP-KVM Tools (installed by espkvm-tools --allow-power)
 polkit.addRule(function(action, subject) {
-    if (subject.user == "espkvm-agent" && [%s].indexOf(action.id) >= 0)
+    if (subject.user == "espkvm-tools" && [%s].indexOf(action.id) >= 0)
         return polkit.Result.YES;
 });
 `
 
-const pkla = `[ESP-KVM agent power]
-Identity=unix-user:espkvm-agent
+const pkla = `[ESP-KVM Tools power]
+Identity=unix-user:espkvm-tools
 Action=%s
 ResultAny=yes
 ResultInactive=yes
@@ -119,6 +122,7 @@ func Install(o Options) error {
 	if os.Geteuid() != 0 {
 		return errors.New("run it with sudo: it writes a udev rule and a systemd unit")
 	}
+	removeOld()
 	if err := copyExe(exePath); err != nil {
 		return err
 	}
@@ -133,11 +137,11 @@ func Install(o Options) error {
 		if err := os.WriteFile(userUnit, []byte(fmt.Sprintf(desktopUnit, exePath, args)), 0o644); err != nil {
 			return err
 		}
-		if err := sh("systemctl", "--global", "enable", "espkvm-agent.service"); err != nil {
+		if err := sh("systemctl", "--global", "enable", "espkvm-tools.service"); err != nil {
 			return err
 		}
 		fmt.Println("Installed for every user's desktop session. It starts at the next login,")
-		fmt.Println("or now with: systemctl --user start espkvm-agent")
+		fmt.Println("or now with: systemctl --user start espkvm-tools")
 		return nil
 	}
 	if err := os.MkdirAll(filepath.Dir(sysusersPath), 0o755); err != nil {
@@ -162,14 +166,14 @@ func Install(o Options) error {
 		return err
 	}
 	_ = sh("systemctl", "daemon-reload")
-	if err := sh("systemctl", "enable", "espkvm-agent.service"); err != nil {
+	if err := sh("systemctl", "enable", "espkvm-tools.service"); err != nil {
 		return err
 	}
 	// restart, not start: an older copy may be running as root.
-	if err := sh("systemctl", "restart", "espkvm-agent.service"); err != nil {
+	if err := sh("systemctl", "restart", "espkvm-tools.service"); err != nil {
 		return err
 	}
-	fmt.Println("Installed and started as user " + sysUser + ": systemctl status espkvm-agent")
+	fmt.Println("Installed and started as user " + sysUser + ": systemctl status espkvm-tools")
 	return nil
 }
 
@@ -226,8 +230,8 @@ func Uninstall() error {
 	if os.Geteuid() != 0 {
 		return errors.New("run it with sudo")
 	}
-	_ = sh("systemctl", "disable", "--now", "espkvm-agent.service")
-	_ = sh("systemctl", "--global", "disable", "espkvm-agent.service")
+	_ = sh("systemctl", "disable", "--now", "espkvm-tools.service")
+	_ = sh("systemctl", "--global", "disable", "espkvm-tools.service")
 	removePolkit()
 	// The user stays: removing users is left to the admin, as sysusers does.
 	for _, p := range []string{unitPath, userUnit, udevPath, sysusersPath, exePath} {
@@ -239,6 +243,28 @@ func Uninstall() error {
 	_ = sh("udevadm", "control", "--reload")
 	fmt.Println("Removed. A desktop copy still running stops at the next logout.")
 	return nil
+}
+
+// Before the rename the program was espkvm-agent. Its service, rules and
+// binary go, so the two never fight over the port. Its user stays, as in
+// Uninstall.
+func removeOld() {
+	const old = "espkvm-agent"
+	_ = exec.Command("systemctl", "disable", "--now", old+".service").Run()
+	_ = exec.Command("systemctl", "--global", "disable", old+".service").Run()
+	for _, p := range []string{
+		"/etc/systemd/system/" + old + ".service",
+		"/etc/systemd/user/" + old + ".service",
+		"/etc/udev/rules.d/70-" + old + ".rules",
+		"/etc/sysusers.d/" + old + ".conf",
+		"/etc/polkit-1/rules.d/50-" + old + ".rules",
+		"/etc/polkit-1/localauthority/50-local.d/50-" + old + ".pkla",
+		"/usr/local/bin/" + old,
+	} {
+		if os.Remove(p) == nil {
+			fmt.Println("Removed the old " + p)
+		}
+	}
 }
 
 func sh(name string, args ...string) error {
