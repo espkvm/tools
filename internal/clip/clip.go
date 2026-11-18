@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 ESP-KVM contributors
+// SPDX-FileCopyrightText: 2026 Evgenij Spitsyn and ESP-KVM contributors
 // SPDX-License-Identifier: Apache-2.0
 
 // Package clip reads and sets the text clipboard of the desktop session the

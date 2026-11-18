@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2026 ESP-KVM contributors
+// SPDX-FileCopyrightText: 2026 Evgenij Spitsyn and ESP-KVM contributors
 // SPDX-License-Identifier: Apache-2.0
 
 // Package service installs ESP-KVM Tools so it starts by itself, the way each OS
